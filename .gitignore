@@ -1,0 +1,10 @@
+.vs/
+
+x64/
+x86/
+
+PEInformer.slnx
+
+PEInformer/PEInformer.vcxproj.filters
+PEInformer/PEInformer.vcxproj.user
+PEInformer/PEInformer.vcxproj
