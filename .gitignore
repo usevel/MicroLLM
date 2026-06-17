@@ -3,8 +3,6 @@
 x64/
 x86/
 
-PEInformer.slnx
+Models.slnx
 
-PEInformer/PEInformer.vcxproj.filters
-PEInformer/PEInformer.vcxproj.user
-PEInformer/PEInformer.vcxproj
+Models/*.vcxproj.user
