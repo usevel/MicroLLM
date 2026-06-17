@@ -26,8 +26,7 @@ namespace Tokens
 			{
 				if (Ch == ',' || Ch == '.' ||
 					Ch == '!' || Ch == '?' ||
-					Ch == '-' || Ch == '=' ||
-					Ch == '+')
+					Ch == '-' || Ch == '=')
 					Ch = ' ';
 			}
 
@@ -71,6 +70,16 @@ namespace Tokens
 			}
 
 			return Result;
+		}
+
+		std::string FindTheWord(int ID)
+		{
+			for (auto& [Word, idx] : WordToIndex)
+			{
+				if (ID == idx)
+					return Word;
+			}
+			return "";
 		}
 	};
 }

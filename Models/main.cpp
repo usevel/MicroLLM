@@ -8,10 +8,11 @@
 int main()
 {
 	std::vector<std::string> TestPhrases = {
-		"фильм плохой",
-		"фильм хороший",
-		"не плохой",
-		"не хороший"
+		"зашел", "программист", "в", "бар", "и", "говорит",
+		"налейте", "мне", "пиво",
+		"а", "бармен", "ему", "отвечает",
+		"у", "нас", "нет", "пива", "есть", "только", "кофе",
+		"программист", "вздохнул", "и", "пошел", "писать", "код", "на", "с++"
 	};
 
 	Tokens::Tokenizator Token;
@@ -21,35 +22,45 @@ int main()
 	for (auto& [word, idx] : Token.WordToIndex)
 		std::cout << "[" << idx << "] " << word << '\n';
 
-	std::cout << "\n-----------------------------------\n\n";
+	std::cout << "\n-----------------------------------\n";
 
-	Models::DeepModel II(Token.WordToIndex.size(), 8, 2);
+	int MapSize = Token.WordToIndex.size();
+	Models::DeepModel II(MapSize, 16, MapSize);
 
-	for (int i = 0; i < 5000; ++i)
+	for (int epoch = 0; epoch < 5000; ++epoch)
 	{
-		II.MachineLearning(Token.FloatVector("фильм плохой"),	{ 0.f, 1.f });
-		II.MachineLearning(Token.FloatVector("фильм хороший"),	{ 1.f, 0.f });
-		II.MachineLearning(Token.FloatVector("не плохой"),		{ 1.f, 0.f });
-		II.MachineLearning(Token.FloatVector("не хороший"),		{ 0.f, 1.f });
+		for (int i = 0; i < TestPhrases.size() - 1; ++i)
+		{
+			std::vector<float> Input = Token.FloatVector(TestPhrases[i]);
+			std::vector<float> Target = Token.FloatVector(TestPhrases[i + 1]);
+			II.MachineLearning(Input, Target);
+		}
 	}
 
 	while (true)
 	{
+		std::cout << "\n\n";
+
 		std::string InputText;
 		std::cout << "Начните диалог: ";
 		std::getline(std::cin, InputText);
 
-		std::vector<float> DetectWords = Token.FloatVector(InputText);
-		std::cout << "Нейродетект: [ ";
-		for (auto& Fl : DetectWords)
-			std::cout << Fl << ' ';
-		std::cout << "]\n";
+		std::cout << "AI вывод: " << InputText << ' ';
 
-		std::vector<float> Predict = II.Forward(DetectWords);
+		for (int i = 0; i < 6; ++i)
+		{
+			std::vector<float> DetectWords = Token.FloatVector(InputText);
 
-		std::cout << "AI вывод: ";
-		if (Predict[0] > Predict[1])		std::cout << "Хороший\n\n";
-		else if (Predict[0] < Predict[1])	std::cout << "Плохой\n\n";
+			std::vector<float> Predict = II.Forward(DetectWords);
+
+			auto it = std::max_element(Predict.begin(), Predict.end());
+			int BestIndex = std::distance(Predict.begin(), it);
+			std::string NextWord = Token.FindTheWord(BestIndex);
+
+			std::cout << NextWord << ' ';
+
+			InputText = NextWord;
+		}
 	}
 
 }

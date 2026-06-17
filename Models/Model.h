@@ -121,9 +121,6 @@ namespace Models
 			{
 				ErrorOutput[i] = Predict[i] - Target[i];
 				Biases2[i] -= (LearnRate * ErrorOutput[i]);
-
-				for (int j = 0; j < HiddenSize; ++j)
-					MatrixWeight2[i][j] -= (LearnRate * ErrorOutput[i] * Hidden[j]);
 			}
 
 			std::vector<float> ErrorHidden(HiddenSize, 0.f);
@@ -134,6 +131,12 @@ namespace Models
 
 				if (HiddenRaw[i] <= 0)
 					ErrorHidden[i] = 0.f;
+			}
+
+			for (int i = 0; i < OutputSize; ++i)
+			{
+				for (int j = 0; j < HiddenSize; ++j)
+					MatrixWeight2[i][j] -= (LearnRate * ErrorOutput[i] * Hidden[j]);
 			}
 
 			for (int i = 0; i < HiddenSize; ++i)
