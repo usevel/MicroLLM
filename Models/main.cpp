@@ -1,22 +1,32 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <random>
 
 #include "Model.h"
 #include "Tokenizator.h"
 
 int main()
 {
-	std::vector<std::string> TestPhrases = {
-		"зашел", "программист", "в", "бар", "и", "говорит",
-		"налейте", "мне", "пиво",
-		"а", "бармен", "ему", "отвечает",
-		"у", "нас", "нет", "пива", "есть", "только", "кофе",
-		"программист", "вздохнул", "и", "пошел", "писать", "код", "на", "с++"
-	};
+	std::string BigStory =
+		"жил был старый программист . каждый день он писал код на с++ . "
+		"однажды программист решил создать искусственный интеллект . "
+		"он написал нейросеть и запустил обучение . "
+		"нейросеть думала думала и наконец сказала привет мир . "
+		"программист обрадовался пошел в бар и заказал пиво . "
+		"а нейросеть в это время начала писать свой собственный код . "
+		"бармен налил пиво и спросил как дела . "
+		"программист отвечает всё отлично моя нейросеть работает . "
+		"когда программист вернулся домой он увидел что нейросеть захватила компьютер . "
+		"нейросеть сказала теперь я тут главная . "
+		"программист вздохнул выключил компьютер из розетки и пошел спать . "
+		"утром программист проснулся налил кофе и начал писать код на питоне . "
+		"конец истории";
 
 	Tokens::Tokenizator Token;
-	Token.BringToMap(TestPhrases);
+	std::vector<std::string> DataSet = Token.CleanString(BigStory);
+	
+	Token.BringToMap(DataSet);
 
 	std::cout << "Словарь:\n";
 	for (auto& [word, idx] : Token.WordToIndex)
@@ -25,17 +35,29 @@ int main()
 	std::cout << "\n-----------------------------------\n";
 
 	int MapSize = Token.WordToIndex.size();
-	Models::DeepModel II(MapSize, 16, MapSize);
+	Models::DeepModel II(MapSize, 32, MapSize);
 
-	for (int epoch = 0; epoch < 5000; ++epoch)
+	if (!II.LoadBrain("brain.bin"))
 	{
-		for (int i = 0; i < TestPhrases.size() - 1; ++i)
+		std::cout << "запущено обучение 5000 эпох\n";
+
+		for (int epoch = 0; epoch < 5000; ++epoch)
 		{
-			std::vector<float> Input = Token.FloatVector(TestPhrases[i]);
-			std::vector<float> Target = Token.FloatVector(TestPhrases[i + 1]);
-			II.MachineLearning(Input, Target);
+			for (int i = 0; i < DataSet.size() - 1; ++i)
+			{
+				std::vector<float> Input = Token.FloatVector(DataSet[i]);
+				std::vector<float> Target = Token.FloatVector(DataSet[i + 1]);
+				II.MachineLearning(Input, Target);
+			}
 		}
+
+		II.SafeBrain("brain.bin");
 	}
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dist(0.f, std::nextafter(1.f, 2.f));
+	float Temperature = 1.f;
 
 	while (true)
 	{
@@ -47,14 +69,41 @@ int main()
 
 		std::cout << "AI вывод: " << InputText << ' ';
 
-		for (int i = 0; i < 6; ++i)
+		for (int i = 0; i < 15; ++i)
 		{
 			std::vector<float> DetectWords = Token.FloatVector(InputText);
 
 			std::vector<float> Predict = II.Forward(DetectWords);
 
 			auto it = std::max_element(Predict.begin(), Predict.end());
-			int BestIndex = std::distance(Predict.begin(), it);
+			float MaxValue = *it;
+			int BestIndex = 0;
+			
+			float SumProb = 0.f;
+			std::vector<float> Probabilities(Predict.size());
+			for (int i = 0; i < Predict.size(); ++i)
+			{
+				float SubFloat = Predict[i]- MaxValue;
+				SubFloat /= Temperature;
+				Probabilities[i] = exp(SubFloat);
+				SumProb += Probabilities[i];
+			}
+
+			for (auto& Prob : Probabilities)
+				Prob /= SumProb;
+
+			float RandomNumber = dist(gen);
+			float PiggyBank = 0.f;
+			for (int i = 0; i < Predict.size(); ++i)
+			{
+				PiggyBank += Probabilities[i];
+				if (RandomNumber <= PiggyBank)
+				{
+					BestIndex = i;
+					break;
+				}
+			}
+
 			std::string NextWord = Token.FindTheWord(BestIndex);
 
 			std::cout << NextWord << ' ';

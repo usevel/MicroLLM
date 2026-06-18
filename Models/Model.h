@@ -3,6 +3,7 @@
 #include <vector>
 #include <numeric>
 #include <cstdlib>
+#include <fstream>
 
 namespace Models
 {
@@ -53,6 +54,7 @@ namespace Models
 		int OutputSize = 0;
 		float LearnRate = 0.1f;
 	};
+
 
 
 	class DeepModel
@@ -146,6 +148,45 @@ namespace Models
 				for (int j = 0; j < InputSize; ++j)
 					MatrixWeight1[i][j] -= (LearnRate * ErrorHidden[i] * InputUser[j]);
 			}
+		}
+
+		void SafeBrain(const std::string& FileName)
+		{
+			std::ofstream SafeFile(FileName, std::ios::binary);
+			if (!SafeFile.is_open())
+			{
+				std::cout << "не удалось создать файл";
+				return;
+			}
+
+			for (int i = 0; i < HiddenSize; ++i)
+				SafeFile.write(reinterpret_cast<char*>(MatrixWeight1[i].data()), InputSize * sizeof(float));
+			SafeFile.write(reinterpret_cast<char*>(Biases1.data()), HiddenSize * sizeof(float));
+
+			for (int i = 0; i < OutputSize; ++i)
+				SafeFile.write(reinterpret_cast<char*>(MatrixWeight2[i].data()), HiddenSize * sizeof(float));
+			SafeFile.write(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
+
+			SafeFile.close();
+			std::cout << "мозг сохранен " << FileName;
+		}
+
+		bool LoadBrain(const std::string& FileName)
+		{
+			std::ifstream LoadFile(FileName, std::ios::binary);
+			if (!LoadFile.is_open())
+				return false;
+
+			for (int i = 0; i < HiddenSize; ++i)
+				LoadFile.read(reinterpret_cast<char*>(MatrixWeight1[i].data()), InputSize * sizeof(float));
+			LoadFile.read(reinterpret_cast<char*>(Biases1.data()), HiddenSize * sizeof(float));
+
+			for (int i = 0; i < OutputSize; ++i)
+				LoadFile.read(reinterpret_cast<char*>(MatrixWeight2[i].data()), HiddenSize * sizeof(float));
+			LoadFile.read(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
+		
+			LoadFile.close();
+			std::cout << "мозг был успешно загружен из " << FileName;
 		}
 
 	private:
