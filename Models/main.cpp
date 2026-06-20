@@ -35,7 +35,7 @@ int main()
 	std::cout << "\n-----------------------------------\n";
 
 	int MapSize = Token.WordToIndex.size();
-	Models::DeepModel II(MapSize, 32, MapSize);
+	Models::DeepModel II(MapSize * 3, 32, MapSize);
 
 	if (!II.LoadBrain("brain.bin"))
 	{
@@ -43,10 +43,19 @@ int main()
 
 		for (int epoch = 0; epoch < 5000; ++epoch)
 		{
-			for (int i = 0; i < DataSet.size() - 1; ++i)
+			for (int i = 0; i < DataSet.size() - 3; ++i)
 			{
-				std::vector<float> Input = Token.FloatVector(DataSet[i]);
-				std::vector<float> Target = Token.FloatVector(DataSet[i + 1]);
+				std::vector<float> w1 = Token.FloatVector(DataSet[i]);
+				std::vector<float> w2 = Token.FloatVector(DataSet[i + 1]);
+				std::vector<float> w3 = Token.FloatVector(DataSet[i + 2]);
+
+				std::vector<float> Input;
+				Input.reserve(MapSize * 3);
+				Input.insert(Input.end(), w1.begin(), w1.end());
+				Input.insert(Input.end(), w2.begin(), w2.end());
+				Input.insert(Input.end(), w3.begin(), w3.end());
+
+				std::vector<float> Target = Token.FloatVector(DataSet[i + 3]);
 				II.MachineLearning(Input, Target);
 			}
 		}
@@ -57,7 +66,7 @@ int main()
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> dist(0.f, std::nextafter(1.f, 2.f));
-	float Temperature = 1.f;
+	float Temperature = 0.05f;
 
 	while (true)
 	{
@@ -67,11 +76,26 @@ int main()
 		std::cout << "Начните диалог: ";
 		std::getline(std::cin, InputText);
 
+		std::vector<std::string> Context = Token.CleanString(InputText);
+		if (Context.size() < 3)
+		{
+			std::cout << "\nнужно 3 слова\n";
+			continue;
+		}
+
 		std::cout << "AI вывод: " << InputText << ' ';
 
 		for (int i = 0; i < 15; ++i)
 		{
-			std::vector<float> DetectWords = Token.FloatVector(InputText);
+			std::vector<float> w1 = Token.FloatVector(Context[0]);
+			std::vector<float> w2 = Token.FloatVector(Context[1]);
+			std::vector<float> w3 = Token.FloatVector(Context[2]);
+
+			std::vector<float> DetectWords;
+			DetectWords.reserve(MapSize * 3);
+			DetectWords.insert(DetectWords.end(), w1.begin(), w1.end());
+			DetectWords.insert(DetectWords.end(), w2.begin(), w2.end());
+			DetectWords.insert(DetectWords.end(), w3.begin(), w3.end());
 
 			std::vector<float> Predict = II.Forward(DetectWords);
 
@@ -108,7 +132,9 @@ int main()
 
 			std::cout << NextWord << ' ';
 
-			InputText = NextWord;
+			Context[0] = Context[1];
+			Context[1] = Context[2];
+			Context[2] = NextWord;
 		}
 	}
 
