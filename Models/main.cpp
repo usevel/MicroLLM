@@ -2,78 +2,128 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <fstream>
+#include <sstream>
 
 #include "Model.h"
 #include "Tokenizator.h"
 
+std::string GetPath()
+{
+	std::string Path;
+	std::cout << "Перетащи файл: ";
+	std::getline(std::cin, Path);
+
+	if (!Path.empty() && Path.front() == '"' && Path.back() == '"')
+		Path = Path.substr(1, Path.size() - 2);
+
+	std::ifstream ReadFile(Path);
+	if (!ReadFile.is_open())
+	{
+		std::cout << "\nошибка чтения файла\n";
+		return "ОШИБКА\n";
+	}
+
+	std::stringstream ss;
+	std::string Text;
+	ss << ReadFile.rdbuf();
+	Text = ss.str();
+
+	ReadFile.close();
+
+	return Text;
+}
+
 int main()
 {
-	std::string BigStory =
-		"жил был старый программист . каждый день он писал код на с++ . "
-		"однажды программист решил создать искусственный интеллект . "
-		"он написал нейросеть и запустил обучение . "
-		"нейросеть думала думала и наконец сказала привет мир . "
-		"программист обрадовался пошел в бар и заказал пиво . "
-		"а нейросеть в это время начала писать свой собственный код . "
-		"бармен налил пиво и спросил как дела . "
-		"программист отвечает всё отлично моя нейросеть работает . "
-		"когда программист вернулся домой он увидел что нейросеть захватила компьютер . "
-		"нейросеть сказала теперь я тут главная . "
-		"программист вздохнул выключил компьютер из розетки и пошел спать . "
-		"утром программист проснулся налил кофе и начал писать код на питоне . "
-		"конец истории";
+	std::cout << "Создаем словарь\n";
+	std::string Text = GetPath();
+
+	std::cout << "Создаем тестовые вопросы\n";
+	std::string QA = GetPath();
 
 	Tokens::Tokenizator Token;
-	std::vector<std::string> DataSet = Token.CleanString(BigStory);
+	std::vector<std::string> DataSet = Token.CleanString(Text);
+	std::vector<std::string> QASet = Token.CleanString(QA);
 	
 	Token.BringToMap(DataSet);
+	Token.BringToMap(QASet);
 
-	std::cout << "Словарь:\n";
-	for (auto& [word, idx] : Token.WordToIndex)
-		std::cout << "[" << idx << "] " << word << '\n';
-
-	std::cout << "\n-----------------------------------\n";
+	std::cout << "-----------------------------------\n";
 
 	int MapSize = Token.WordToIndex.size();
-	Models::DeepModel II(MapSize * 3, 32, MapSize);
+	Models::DeepModel II(MapSize * 3, 256, MapSize);
 
-	if (!II.LoadBrain("brain.bin"))
+	std::string RewriteBrain;
+	std::cout << "\nПереобучить модель(+/-): ";
+	std::getline(std::cin, RewriteBrain);
+	if (RewriteBrain == "+")
 	{
-		std::cout << "запущено обучение 5000 эпох\n";
+		std::cout << "\nЭтап 1: запущено обучение 3000 эпох\n";
 
-		for (int epoch = 0; epoch < 5000; ++epoch)
+		for (int epoch = 0; epoch < 3000; ++epoch)
 		{
 			for (int i = 0; i < DataSet.size() - 3; ++i)
 			{
-				std::vector<float> w1 = Token.FloatVector(DataSet[i]);
-				std::vector<float> w2 = Token.FloatVector(DataSet[i + 1]);
-				std::vector<float> w3 = Token.FloatVector(DataSet[i + 2]);
+				std::vector<std::vector<float>> w;
+				for (int j = 0; j < 3; ++j)
+					w.push_back(Token.FloatVector(DataSet[i + j]));
 
 				std::vector<float> Input;
 				Input.reserve(MapSize * 3);
-				Input.insert(Input.end(), w1.begin(), w1.end());
-				Input.insert(Input.end(), w2.begin(), w2.end());
-				Input.insert(Input.end(), w3.begin(), w3.end());
+				for (int j = 0; j < 3; ++j)
+					Input.insert(Input.end(), w[j].begin(), w[j].end());
 
 				std::vector<float> Target = Token.FloatVector(DataSet[i + 3]);
 				II.MachineLearning(Input, Target);
 			}
 		}
 
-		II.SafeBrain("brain.bin");
+		II.SafeBrain("brain_base.bin");
 	}
+	else
+		II.LoadBrain("brain_base.bin");
+
+	RewriteBrain = "";
+	std::cout << "\nПереобучить вопросы(+/-): ";
+	std::getline(std::cin, RewriteBrain);
+	if (RewriteBrain == "+")
+	{
+		std::cout << "\nЭтап 2: учимся отвечать на вопросы\n";
+
+		II.LearnRate = 0.01f;
+		for (int epoch = 0; epoch < 500; ++epoch)
+		{
+			for (int i = 0; i < QASet.size() - 3; ++i)
+			{
+				std::vector<std::vector<float>> w;
+				for (int j = 0; j < 3; ++j)
+					w.push_back(Token.FloatVector(QASet[i + j]));
+
+				std::vector<float> Input;
+				Input.reserve(MapSize * 3);
+				for (int j = 0; j < 3; ++j)
+					Input.insert(Input.end(), w[j].begin(), w[j].end());
+
+				std::vector<float> Target = Token.FloatVector(QASet[i + 3]);
+				II.MachineLearning(Input, Target);
+			}
+		}
+
+		II.SafeBrain("brain_answer.bin");
+	}
+	else
+		II.LoadBrain("brain_answer.bin");
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> dist(0.f, std::nextafter(1.f, 2.f));
-	float Temperature = 0.05f;
+	float Temperature = .05f;
 
 	while (true)
 	{
-		std::cout << "\n\n";
-
 		std::string InputText;
-		std::cout << "Начните диалог: ";
+		std::cout << "\n\nНачните диалог: ";
 		std::getline(std::cin, InputText);
 
 		std::vector<std::string> Context = Token.CleanString(InputText);
@@ -83,9 +133,11 @@ int main()
 			continue;
 		}
 
-		std::cout << "AI вывод: " << InputText << ' ';
+		Context = { Context[Context.size() - 3], Context[Context.size() - 2], Context[Context.size() - 1] };
 
-		for (int i = 0; i < 15; ++i)
+		std::cout << "AI вывод: ";
+
+		for (int i = 0; i < 30; ++i)
 		{
 			std::vector<float> w1 = Token.FloatVector(Context[0]);
 			std::vector<float> w2 = Token.FloatVector(Context[1]);
@@ -129,6 +181,9 @@ int main()
 			}
 
 			std::string NextWord = Token.FindTheWord(BestIndex);
+
+			if (NextWord == "ВОПРОС")
+				break;
 
 			std::cout << NextWord << ' ';
 

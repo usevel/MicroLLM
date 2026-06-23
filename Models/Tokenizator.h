@@ -23,6 +23,9 @@ namespace Tokens
 			std::vector<std::string> ArrayString;
 
 			for (auto& Ch : CleanText)
+				Ch = std::tolower(Ch);
+
+			for (auto& Ch : CleanText)
 			{
 				if (Ch == ',' || Ch == '.' ||
 					Ch == '!' || Ch == '?' ||
@@ -40,19 +43,12 @@ namespace Tokens
 
 		void BringToMap(std::vector<std::string>& SetWords)
 		{
-			int index = 0;
-
-			for (auto& SetWord : SetWords)
+			for (auto& Word : SetWords)
 			{
-				std::vector<std::string> Words = CleanString(SetWord);
-
-				for (auto& Word : Words)
+				if (WordToIndex.find(Word) == WordToIndex.end())
 				{
-					if (WordToIndex.find(Word) == WordToIndex.end())
-					{
-						WordToIndex[Word] = index;
-						++index;
-					}
+					int index = WordToIndex.size();
+					WordToIndex[Word] = index;
 				}
 			}
 		}

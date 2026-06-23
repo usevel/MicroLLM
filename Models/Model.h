@@ -70,6 +70,8 @@ namespace Models
 		std::vector<float> Hidden;
 		std::vector<float> Predict;
 
+		float LearnRate = 0.05f;
+
 		DeepModel(int InSize, int HidSize, int OutSize)
 			: InputSize{ InSize }, HiddenSize{ HidSize }, OutputSize{ OutSize }
 		{
@@ -168,7 +170,7 @@ namespace Models
 			SafeFile.write(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
 
 			SafeFile.close();
-			std::cout << "мозг сохранен " << FileName;
+			std::cout << "файл сохранен " << FileName;
 		}
 
 		bool LoadBrain(const std::string& FileName)
@@ -186,13 +188,12 @@ namespace Models
 			LoadFile.read(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
 		
 			LoadFile.close();
-			std::cout << "мозг был успешно загружен из " << FileName;
+			std::cout << "файл был успешно загружен из " << FileName;
 		}
 
 	private:
 		int InputSize = 0;
 		int HiddenSize = 0;
 		int OutputSize = 0;
-		float LearnRate = 0.05f;
 	};
 }
