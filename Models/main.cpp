@@ -39,20 +39,17 @@ int main()
 	std::cout << "Создаем словарь\n";
 	std::string Text = GetPath();
 
-	std::cout << "Создаем тестовые вопросы\n";
-	std::string QA = GetPath();
-
 	Tokens::Tokenizator Token;
 	std::vector<std::string> DataSet = Token.CleanString(Text);
-	std::vector<std::string> QASet = Token.CleanString(QA);
 	
 	Token.BringToMap(DataSet);
-	Token.BringToMap(QASet);
 
 	std::cout << "-----------------------------------\n";
 
 	int MapSize = Token.WordToIndex.size();
-	Models::DeepModel II(MapSize * 3, 256, MapSize);
+	//int EmbeddingSize = 16;
+	int ContextWords = 3;
+	Models::DeepModel II(MapSize * ContextWords, 256, MapSize);
 
 	std::string RewriteBrain;
 	std::cout << "\nПереобучить модель(+/-): ";
@@ -69,13 +66,13 @@ int main()
 				for (int j = 0; j < 3; ++j)
 					w.push_back(Token.FloatVector(DataSet[i + j]));
 
-				std::vector<float> Input;
-				Input.reserve(MapSize * 3);
+				std::vector<float> InputUser;
+				InputUser.reserve(MapSize * 3);
 				for (int j = 0; j < 3; ++j)
-					Input.insert(Input.end(), w[j].begin(), w[j].end());
+					InputUser.insert(InputUser.end(), w[j].begin(), w[j].end());
 
 				std::vector<float> Target = Token.FloatVector(DataSet[i + 3]);
-				II.MachineLearning(Input, Target);
+				II.MachineLearning(InputUser, Target);
 			}
 		}
 
@@ -84,41 +81,10 @@ int main()
 	else
 		II.LoadBrain("brain_base.bin");
 
-	RewriteBrain = "";
-	std::cout << "\nПереобучить вопросы(+/-): ";
-	std::getline(std::cin, RewriteBrain);
-	if (RewriteBrain == "+")
-	{
-		std::cout << "\nЭтап 2: учимся отвечать на вопросы\n";
-
-		II.LearnRate = 0.01f;
-		for (int epoch = 0; epoch < 500; ++epoch)
-		{
-			for (int i = 0; i < QASet.size() - 3; ++i)
-			{
-				std::vector<std::vector<float>> w;
-				for (int j = 0; j < 3; ++j)
-					w.push_back(Token.FloatVector(QASet[i + j]));
-
-				std::vector<float> Input;
-				Input.reserve(MapSize * 3);
-				for (int j = 0; j < 3; ++j)
-					Input.insert(Input.end(), w[j].begin(), w[j].end());
-
-				std::vector<float> Target = Token.FloatVector(QASet[i + 3]);
-				II.MachineLearning(Input, Target);
-			}
-		}
-
-		II.SafeBrain("brain_answer.bin");
-	}
-	else
-		II.LoadBrain("brain_answer.bin");
-
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> dist(0.f, std::nextafter(1.f, 2.f));
-	float Temperature = .05f;
+	float Temperature = .8f;
 
 	while (true)
 	{
@@ -137,17 +103,16 @@ int main()
 
 		std::cout << "AI вывод: ";
 
-		for (int i = 0; i < 30; ++i)
+		for (int i = 0; i < 10; ++i)
 		{
-			std::vector<float> w1 = Token.FloatVector(Context[0]);
-			std::vector<float> w2 = Token.FloatVector(Context[1]);
-			std::vector<float> w3 = Token.FloatVector(Context[2]);
+			std::vector<std::vector<float>> w;
+			for (int j = 0; j < 3; ++j)
+				w.push_back(Token.FloatVector(Context[j]));
 
 			std::vector<float> DetectWords;
 			DetectWords.reserve(MapSize * 3);
-			DetectWords.insert(DetectWords.end(), w1.begin(), w1.end());
-			DetectWords.insert(DetectWords.end(), w2.begin(), w2.end());
-			DetectWords.insert(DetectWords.end(), w3.begin(), w3.end());
+			for (int j = 0; j < 3; ++j)
+				DetectWords.insert(DetectWords.end(), w[j].begin(), w[j].end());
 
 			std::vector<float> Predict = II.Forward(DetectWords);
 
@@ -181,9 +146,6 @@ int main()
 			}
 
 			std::string NextWord = Token.FindTheWord(BestIndex);
-
-			if (NextWord == "ВОПРОС")
-				break;
 
 			std::cout << NextWord << ' ';
 
