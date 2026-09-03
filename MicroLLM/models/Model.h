@@ -21,7 +21,7 @@ namespace Models
 		}
 		~SimpleModel() = default;
 
-		std::vector<float> Forward(const std::vector<float>& InputUser)
+		std::vector<float> forward(const std::vector<float>& InputUser)
 		{
 			std::vector<float> Result(OutputSize, 0.f);
 
@@ -35,9 +35,9 @@ namespace Models
 			return Result;
 		}
 
-		void MachineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
+		void machineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
 		{
-			std::vector<float> Predict = Forward(InputUser);
+			std::vector<float> Predict = forward(InputUser);
 
 			for (int i = 0; i < OutputSize; ++i)
 			{
@@ -73,10 +73,16 @@ namespace Models
 		//std::vector<std::vector<float>> EmbeddingTable;
 
 		float LearnRate = 0.05f;
+		
+		DeepModel() = default;
+		~DeepModel() = default;
 
-		DeepModel(int InSize, int HidSize, int OutSize)
-			: InputSize{ InSize }, HiddenSize{ HidSize }, OutputSize { OutSize }
+		void init(int InSize, int HidSize, int OutSize)
 		{
+			InputSize = InSize;
+			HiddenSize = HidSize;
+			OutputSize = OutSize;
+
 			Biases1.resize(HiddenSize, 0.f);
 			Biases2.resize(OutputSize, 0.f);
 
@@ -103,9 +109,8 @@ namespace Models
 					EmbeddingTable[i][j] = (float(rand() % 100) / 1000.f) - 0.05f;
 			*/
 		}
-		~DeepModel() = default;
 
-		std::vector<float> Forward(const std::vector<float>& InputUser)
+		std::vector<float> forward(const std::vector<float>& InputUser)
 		{
 			for (int i = 0; i < HiddenSize; ++i)
 			{
@@ -126,7 +131,7 @@ namespace Models
 			return Predict;
 		}
 
-		void MachineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
+		void machineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
 		{
 			/*
 			std::vector<float> InputUser;
@@ -138,7 +143,7 @@ namespace Models
 			}
 			*/
 
-			Forward(InputUser);
+			forward(InputUser);
 
 			std::vector<float> ErrorOutput(OutputSize, 0.f);
 			for (int i = 0; i < OutputSize; ++i)
@@ -184,12 +189,12 @@ namespace Models
 			*/
 		}
 
-		void SafeBrain(const std::string& FileName)
+		void safeBrain(const std::string& FileName)
 		{
 			std::ofstream SafeFile(FileName, std::ios::binary);
 			if (!SafeFile.is_open())
 			{
-				std::cout << "не удалось создать файл";
+				//std::cout << "не удалось создать файл";
 				return;
 			}
 
@@ -205,10 +210,10 @@ namespace Models
 			//	SafeFile.write(reinterpret_cast<char*>(EmbeddingTable[i].data()), EmbeddingSize * sizeof(float));
 
 			SafeFile.close();
-			std::cout << "файл сохранен " << FileName;
+			//std::cout << "файл сохранен " << FileName;
 		}
 
-		bool LoadBrain(const std::string& FileName)
+		bool loadBrain(const std::string& FileName)
 		{
 			std::ifstream LoadFile(FileName, std::ios::binary);
 			if (!LoadFile.is_open())
@@ -226,7 +231,7 @@ namespace Models
 			//	LoadFile.read(reinterpret_cast<char*>(EmbeddingTable[i].data()), EmbeddingSize * sizeof(float));
 		
 			LoadFile.close();
-			std::cout << "файл был успешно загружен из " << FileName;
+			//std::cout << "файл был успешно загружен из " << FileName;
 
 			return true;
 		}

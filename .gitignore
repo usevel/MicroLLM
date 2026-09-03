@@ -11,3 +11,6 @@ MicroLLM.slnx
 MicroLLM/MicroLLM.vcxproj.filters
 MicroLLM/MicroLLM.vcxproj.user
 MicroLLM/MicroLLM.vcxproj
+
+*.txt
+*.bin
