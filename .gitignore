@@ -6,3 +6,8 @@ x86/
 Models.slnx
 
 Models/*.vcxproj.user
+MicroLLM.slnx
+
+MicroLLM/MicroLLM.vcxproj.filters
+MicroLLM/MicroLLM.vcxproj.user
+MicroLLM/MicroLLM.vcxproj
