@@ -95,6 +95,8 @@ void MicroLLM::updateMemory(const std::vector<std::string>& dataSet)
     {
         AI.loadBrain("brainSafe.bin");
         createLabel("Memory successfully loaded from file");
+        ui.userInput->setEnabled(true);
+        ui.userInput->setFocus();
     }
     else
     {
@@ -115,17 +117,16 @@ void MicroLLM::updateMemory(const std::vector<std::string>& dataSet)
         connect(train, &LLMTraining::finished, this, [this]() {
             createLabel("Training successfully finished!");
             trainingThread = nullptr;
+            ui.userInput->setEnabled(true);
+            ui.userInput->setFocus();
         });
 
         connect(train,  &LLMTraining::finished, thread, &QThread::quit);
-        connect(train,  &LLMTraining::finished, thread, &QObject::deleteLater);
-        connect(thread, &QThread::finished, thread,     &QObject::deleteLater);
+        connect(train,  &LLMTraining::finished, train,  &QObject::deleteLater);
+        connect(thread, &QThread::finished,     thread, &QObject::deleteLater);
 
         thread->start();
     }
-
-    ui.userInput->setEnabled(true);
-    ui.userInput->setFocus();
 }
 
 
