@@ -1,0 +1,63 @@
+QWidget {
+    font-family: Arial, sans-serif;
+}
+
+/* start line edit */
+QLineEdit {
+    font-size: 18px;
+    border-radius: 9px;
+    border: 1px solid #4b4b4b;
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QLineEdit:disabled {
+    background-color: #2b2b2b;
+    color: #777777;
+    border: 1px solid #333333;
+}
+/* end line edit */
+
+/* start label */
+QLabel {
+    font-size: 14px;
+    font-family: Arial;
+    color: #FFFFFF;
+}
+/* end label */
+
+/* start scroll bar */
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    width: 8px;
+    margin: 0px 0px 0px 0px;
+    background: transparent;
+}
+
+QScrollBar::handle:vertical {
+    min-height: 30px;
+    border-radius: 4px;
+    background: #4A4D52;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #686B73;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #888B94;
+}
+
+QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
+    height: 0px;
+    background: none;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+/* end scroll bar */

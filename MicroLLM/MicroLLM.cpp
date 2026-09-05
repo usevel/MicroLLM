@@ -1,4 +1,5 @@
 #include "MicroLLM.h"
+#include "LLMTraining.h"
 
 #include "models/Tokenizator.h"
 
@@ -11,6 +12,8 @@
 #include <QAbstractButton>
 #include <QFileDialog>
 #include <QTimer>
+#include <QThread>
+#include <QCloseEvent>
 
 #include <thread>
 
@@ -23,35 +26,6 @@ MicroLLM::MicroLLM(QWidget *parent)
     ui.scrollArea->setFixedWidth(700);
     ui.scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     ui.verticalLayout->setAlignment(ui.scrollArea, Qt::AlignHCenter);
-    ui.scrollArea->setStyleSheet(R"(
-        QScrollArea {
-           border: none;
-           background: transparent;
-        }
-        QScrollBar:vertical {
-           width: 8px;
-           margin: 0px 0px 0px 0px;
-           background: transparent;
-        }
-        QScrollBar::handle:vertical {
-           min-height: 30px;
-           border-radius: 4px;
-           background: #4A4D52;
-        }
-        QScrollBar::handle:vertical:hover {
-           background: #686B73;
-        }
-        QScrollBar::handle:vertical:pressed {
-           background: #888B94;
-        }
-        QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
-           height: 0px;
-           background: none;
-        }
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-           background: none;
-        }"
-    )");
 
     connect(ui.scrollArea->verticalScrollBar(), &QScrollBar::rangeChanged,
         this, [this](int min, int max) {
@@ -62,19 +36,6 @@ MicroLLM::MicroLLM(QWidget *parent)
     ui.userInput->setFixedHeight(40);
     ui.userInput->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     ui.verticalLayout->setAlignment(ui.userInput, Qt::AlignHCenter);
-    ui.userInput->setStyleSheet(R"(
-        QLineEdit {
-           font-size: 18px;
-           font-family: 'Arial';
-           border-radius: 9px;
-           border: 1px solid #4b4b4b;
-        }
-        QLineEdit:disabled {
-            background-color: #2b2b2b;
-            color: #777777;
-            border: 1px solid #333333;
-        }
-    )");
 
     ui.verticalLayoutForText->addStretch();
 
@@ -91,12 +52,7 @@ MicroLLM::~MicroLLM()
 void MicroLLM::createLabel(const QString& text)
 {
     QLabel* messageLabel = new QLabel(text, this);
-    messageLabel->setStyleSheet(R"(
-        QLabel{
-           font-size: 14px;
-           font-family: 'Arial';
-        }
-    )");
+
     messageLabel->setWordWrap(true);
 
     ui.verticalLayoutForText->addWidget(messageLabel);
@@ -108,7 +64,7 @@ void MicroLLM::initModel(const std::vector<std::string>& dataSet)
 
     token.bringToMap(dataSet);
 
-    int mapSize = token.WordToIndex.size();
+    int mapSize = token.wordToIndex.size();
     AI.init(mapSize * 3, 256, mapSize);
 
     ui.userInput->setEnabled(true);
@@ -142,32 +98,30 @@ void MicroLLM::updateMemory(const std::vector<std::string>& dataSet)
     }
     else
     {
-        createLabel("Waiting...");
-        std::thread thread([this, dataSet]() {
-            for (int epoch = 0; epoch < 3000; ++epoch)
-            {
-                for (int i = 0; i < dataSet.size() - 3; ++i)
-                {
-                    std::vector<std::vector<float>> w;
-                    for (int j = 0; j < 3; ++j)
-                        w.push_back(token.floatVector(dataSet[i + j]));
+        createLabel("Training start...");
+        
+        QThread* thread = new QThread();
+        LLMTraining* train = new LLMTraining(AI, token, dataSet);
+        trainingThread = thread;
 
-                    std::vector<float> InputUser;
-                    InputUser.reserve(token.WordToIndex.size() * 3);
-                    for (int j = 0; j < 3; ++j)
-                        InputUser.insert(InputUser.end(), w[j].begin(), w[j].end());
+        train->moveToThread(thread);
 
-                    std::vector<float> Target = token.floatVector(dataSet[i + 3]);
-                    AI.machineLearning(InputUser, Target);
-                }
-            }
-            AI.safeBrain("brainSafe.bin");
+        connect(thread, &QThread::started, train, &LLMTraining::startTraining);
 
-            QMetaObject::invokeMethod(this, [this]() {
-                createLabel("Training complete! The model is ready to communicate");
-            });
+        connect(train, &LLMTraining::trainingStatus, this, [this](int epoch, int totalEpoch) {
+            createLabel(QString("Training epoch: %1 / %2").arg(epoch).arg(totalEpoch));
         });
-        thread.detach();
+
+        connect(train, &LLMTraining::finished, this, [this]() {
+            createLabel("Training successfully finished!");
+            trainingThread = nullptr;
+        });
+
+        connect(train,  &LLMTraining::finished, thread, &QThread::quit);
+        connect(train,  &LLMTraining::finished, thread, &QObject::deleteLater);
+        connect(thread, &QThread::finished, thread,     &QObject::deleteLater);
+
+        thread->start();
     }
 
     ui.userInput->setEnabled(true);
@@ -185,8 +139,6 @@ void MicroLLM::sendMessage()
         ui.userInput->setFocus();
         return;
     }
-
-    //createLabel(text);
 
     ui.userInput->clear();
 
@@ -208,18 +160,18 @@ void MicroLLM::discussionWithModel(QString text)
         return;
     }
 
-    int contextSize = context.size() - 1;
-    context = { context[contextSize - 2], context[contextSize - 1], context[contextSize] };
+    int contextSize = context.size();
+    context = { context[contextSize - 3], context[contextSize - 2], context[contextSize - 1] };
+    contextSize = context.size();
 
     createLabel("\nThe chatbot predicts the word: ");
 
     QLabel* botMsg = new QLabel(this);
-    botMsg->setStyleSheet("font-size: 14px; font-family: 'Arial'; color: #FFFFFF;");
     botMsg->setWordWrap(true);
     ui.verticalLayoutForText->addWidget(botMsg);
 
-    QString fullText = QString::fromStdString("    " + std::string(context[contextSize - 2] + 
-        ' ' + context[contextSize - 1]) + ' ' + context[contextSize] + ' ');
+    QString fullText = QString::fromStdString("    " + std::string(context[contextSize - 3] + 
+        ' ' + context[contextSize - 2]) + ' ' + context[contextSize - 1] + ' ');
 
     for (int i = 0; i < 10; ++i)
     {
@@ -229,7 +181,7 @@ void MicroLLM::discussionWithModel(QString text)
             w.push_back(token.floatVector(str));
 
         std::vector<float> detectWords;
-        detectWords.reserve(token.WordToIndex.size() * 3);
+        detectWords.reserve(token.wordToIndex.size() * 3);
         for (auto& word : w)
             detectWords.insert(detectWords.end(), word.begin(), word.end());
 
@@ -285,7 +237,7 @@ std::vector<std::string> MicroLLM::getDataset()
     msgBox.setText("How would you like to provide the training dataset?");
 
     QPushButton* fileBtn    = msgBox.addButton("Choose file",   QMessageBox::ActionRole);
-    QPushButton* textbtn     = msgBox.addButton("Enter text",    QMessageBox::ActionRole);
+    QPushButton* textbtn    = msgBox.addButton("Enter text",    QMessageBox::ActionRole);
     QPushButton* cancelBtn  = msgBox.addButton("Cancel",        QMessageBox::RejectRole);
 
     msgBox.exec();
@@ -334,4 +286,17 @@ std::vector<std::string> MicroLLM::getDataset()
         return {};
 
     return token.cleanString(rawContext);
+}
+
+void MicroLLM::closeEvent(QCloseEvent* event)
+{
+    if (trainingThread && trainingThread->isRunning())
+    {
+        trainingThread->requestInterruption();
+        trainingThread->quit();
+
+        trainingThread->wait();
+    }
+
+    event->accept();
 }

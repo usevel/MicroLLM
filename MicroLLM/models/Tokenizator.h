@@ -10,68 +10,68 @@ class Tokenizator
 {
 public:
 
-	std::unordered_map<std::string, int> WordToIndex;
+	std::unordered_map<std::string, int> wordToIndex;
 
 	Tokenizator() = default;
 	~Tokenizator() = default;
 
-	std::vector<std::string> cleanString(const std::string& String)
+	std::vector<std::string> cleanString(const std::string& string)
 	{
-		std::string CleanText = String;
-		std::vector<std::string> ArrayString;
+		std::string cleanText = string;
+		std::vector<std::string> arrayString;
 
-		for (auto& Ch : CleanText)
-			Ch = std::tolower(Ch);
+		for (auto& ch : cleanText)
+			ch = std::tolower(ch);
 
-		for (auto& Ch : CleanText)
+		for (auto& ch : cleanText)
 		{
-			if (Ch == ',' || Ch == '.' ||
-				Ch == '!' || Ch == '?' ||
-				Ch == '-' || Ch == '=')
-				Ch = ' ';
+			if (ch == ',' || ch == '.' ||
+				ch == '!' || ch == '?' ||
+				ch == '-' || ch == '=')
+				ch = ' ';
 		}
 
-		std::stringstream SS(CleanText);
-		std::string Word;
-		while (SS >> Word)
-			ArrayString.push_back(Word);
+		std::stringstream ss(cleanText);
+		std::string word;
+		while (ss >> word)
+			arrayString.push_back(word);
 
-		return ArrayString;
+		return arrayString;
 	}
 
-	void bringToMap(const std::vector<std::string>& SetWords)
+	void bringToMap(const std::vector<std::string>& setWords)
 	{
-		for (auto& Word : SetWords)
+		for (auto& word : setWords)
 		{
-			if (WordToIndex.find(Word) == WordToIndex.end())
+			if (wordToIndex.find(word) == wordToIndex.end())
 			{
-				int index = WordToIndex.size();
-				WordToIndex[Word] = index;
+				int index = wordToIndex.size();
+				wordToIndex[word] = index;
 			}
 		}
 	}
 
-	std::vector<float> floatVector(std::string InputText)
+	std::vector<float> floatVector(std::string inputText)
 	{
-		std::vector<float> Result(WordToIndex.size(), 0.f);
-		std::vector<std::string> Words = cleanString(InputText);
+		std::vector<float> result(wordToIndex.size(), 0.f);
+		std::vector<std::string> words = cleanString(inputText);
 
-		for (auto& Word : Words)
+		for (auto& Word : words)
 		{
-			auto it = WordToIndex.find(Word);
-			if (it != WordToIndex.end())
-				Result[it->second] = 1.f;
+			auto it = wordToIndex.find(Word);
+			if (it != wordToIndex.end())
+				result[it->second] = 1.f;
 		}
 
-		return Result;
+		return result;
 	}
 
 	std::string findTheWord(int ID)
 	{
-		for (auto& [Word, idx] : WordToIndex)
+		for (auto& [word, idx] : wordToIndex)
 		{
 			if (ID == idx)
-				return Word;
+				return word;
 		}
 		return "";
 	}

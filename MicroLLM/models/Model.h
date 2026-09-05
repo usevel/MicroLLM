@@ -7,99 +7,49 @@
 
 namespace Models
 {
-	class SimpleModel
-	{
-	public:
-		std::vector<std::vector<float>> MatrixWeight;
-		std::vector<float> Biases;
-
-
-		SimpleModel(int InSize, int OutSize) : InputSize(InSize), OutputSize(OutSize)
-		{
-			MatrixWeight.resize(OutputSize, std::vector<float>(InputSize, 0.f));
-			Biases.resize(OutputSize, 0.f);
-		}
-		~SimpleModel() = default;
-
-		std::vector<float> forward(const std::vector<float>& InputUser)
-		{
-			std::vector<float> Result(OutputSize, 0.f);
-
-			for (int i = 0; i < OutputSize; ++i)
-			{
-				Result[i] = Biases[i];
-				for (int j = 0; j < InputSize; ++j)
-					Result[i] += MatrixWeight[i][j] * InputUser[j];
-			}
-
-			return Result;
-		}
-
-		void machineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
-		{
-			std::vector<float> Predict = forward(InputUser);
-
-			for (int i = 0; i < OutputSize; ++i)
-			{
-				float Error = Predict[i] - Target[i];
-				Biases[i] -= (LearnRate * Error);
-
-				for (int j = 0; j < InputSize; ++j)
-					MatrixWeight[i][j] -= (LearnRate * Error * InputUser[j]);
-			}
-		}
-
-	private:
-		int InputSize = 0;
-		int OutputSize = 0;
-		float LearnRate = 0.1f;
-	};
-
-
-
 	class DeepModel
 	{
 	public:
-		std::vector<std::vector<float>> MatrixWeight1;
-		std::vector<float> Biases1;
+		std::vector<std::vector<float>> matrixWeight1;
+		std::vector<float> biases1;
 
-		std::vector<std::vector<float>> MatrixWeight2;
-		std::vector<float> Biases2;
+		std::vector<std::vector<float>> matrixWeight2;
+		std::vector<float> biases2;
 
-		std::vector<float> HiddenRaw;
-		std::vector<float> Hidden;
-		std::vector<float> Predict;
+		std::vector<float> hiddenRaw;
+		std::vector<float> hidden;
+		std::vector<float> predict;
 
-		//std::vector<std::vector<float>> EmbeddingTable;
+		//std::vector<std::vector<float>> embeddingTable;
 
-		float LearnRate = 0.05f;
+		float learnRate = 0.05f;
 		
 		DeepModel() = default;
 		~DeepModel() = default;
 
-		void init(int InSize, int HidSize, int OutSize)
+		void init(int inSize, int hidSize, int outSize)
 		{
-			InputSize = InSize;
-			HiddenSize = HidSize;
-			OutputSize = OutSize;
+			inputSize = inSize;
+			hiddenSize = hidSize;
+			outputSize = outSize;
 
-			Biases1.resize(HiddenSize, 0.f);
-			Biases2.resize(OutputSize, 0.f);
+			biases1.resize(hiddenSize, 0.f);
+			biases2.resize(outputSize, 0.f);
 
-			MatrixWeight1.resize(HiddenSize, std::vector<float>(InputSize));
-			MatrixWeight2.resize(OutputSize, std::vector<float>(HiddenSize));
+			matrixWeight1.resize(hiddenSize, std::vector<float>(inputSize));
+			matrixWeight2.resize(outputSize, std::vector<float>(hiddenSize));
 
-			for (int i = 0; i < HiddenSize; ++i)
-				for (int j = 0; j < InputSize; ++j)
-					MatrixWeight1[i][j] = (float(rand() % 100) / 1000.f) - 0.05f;
+			for (int i = 0; i < hiddenSize; ++i)
+				for (int j = 0; j < inputSize; ++j)
+					matrixWeight1[i][j] = (float(rand() % 100) / 1000.f) - 0.05f;
 
-			for (int i = 0; i < OutputSize; ++i)
-				for (int j = 0; j < HiddenSize; ++j)
-					MatrixWeight2[i][j] = (float(rand() % 100) / 1000.f) - 0.05f;
+			for (int i = 0; i < outputSize; ++i)
+				for (int j = 0; j < hiddenSize; ++j)
+					matrixWeight2[i][j] = (float(rand() % 100) / 1000.f) - 0.05f;
 
-			HiddenRaw.resize(HiddenSize, 0.f);
-			Hidden.resize(HiddenSize, 0.f);
-			Predict.resize(OutputSize, 0.f);
+			hiddenRaw.resize(hiddenSize, 0.f);
+			hidden.resize(hiddenSize, 0.f);
+			predict.resize(outputSize, 0.f);
 
 			/*
 			EmbeddingTable.resize(OutputSize, std::vector<float>(EmbeddingSize));
@@ -110,28 +60,28 @@ namespace Models
 			*/
 		}
 
-		std::vector<float> forward(const std::vector<float>& InputUser)
+		std::vector<float> forward(const std::vector<float>& inputUser)
 		{
-			for (int i = 0; i < HiddenSize; ++i)
+			for (int i = 0; i < hiddenSize; ++i)
 			{
-				HiddenRaw[i] = Biases1[i];
-				for (int j = 0; j < InputSize; ++j)
-					HiddenRaw[i] += MatrixWeight1[i][j] * InputUser[j];
+				hiddenRaw[i] = biases1[i];
+				for (int j = 0; j < inputSize; ++j)
+					hiddenRaw[i] += matrixWeight1[i][j] * inputUser[j];
 
-				Hidden[i] = (HiddenRaw[i] < 0 ? 0.f : HiddenRaw[i]);
+				hidden[i] = (hiddenRaw[i] < 0 ? 0.f : hiddenRaw[i]);
 			}
 
-			for (int i = 0; i < OutputSize; ++i)
+			for (int i = 0; i < outputSize; ++i)
 			{
-				Predict[i] = Biases2[i];
-				for (int j = 0; j < HiddenSize; ++j)
-					Predict[i] += MatrixWeight2[i][j] * Hidden[j];
+				predict[i] = biases2[i];
+				for (int j = 0; j < hiddenSize; ++j)
+					predict[i] += matrixWeight2[i][j] * hidden[j];
 			}
 
-			return Predict;
+			return predict;
 		}
 
-		void machineLearning(const std::vector<float>& InputUser, const std::vector<float>& Target)
+		void machineLearning(const std::vector<float>& InputUser, const std::vector<float>& target)
 		{
 			/*
 			std::vector<float> InputUser;
@@ -145,34 +95,34 @@ namespace Models
 
 			forward(InputUser);
 
-			std::vector<float> ErrorOutput(OutputSize, 0.f);
-			for (int i = 0; i < OutputSize; ++i)
+			std::vector<float> errorOutput(outputSize, 0.f);
+			for (int i = 0; i < outputSize; ++i)
 			{
-				ErrorOutput[i] = Predict[i] - Target[i];
-				Biases2[i] -= (LearnRate * ErrorOutput[i]);
+				errorOutput[i] = predict[i] - target[i];
+				biases2[i] -= (learnRate * errorOutput[i]);
 			}
 
-			std::vector<float> ErrorHidden(HiddenSize, 0.f);
-			for (int i = 0; i < HiddenSize; ++i)
+			std::vector<float> errorHidden(hiddenSize, 0.f);
+			for (int i = 0; i < hiddenSize; ++i)
 			{
-				for (int j = 0; j < OutputSize; ++j)
-					ErrorHidden[i] += ErrorOutput[j] * MatrixWeight2[j][i];
+				for (int j = 0; j < outputSize; ++j)
+					errorHidden[i] += errorOutput[j] * matrixWeight2[j][i];
 
-				if (HiddenRaw[i] <= 0)
-					ErrorHidden[i] = 0.f;
+				if (hiddenRaw[i] <= 0)
+					errorHidden[i] = 0.f;
 			}
 
-			for (int i = 0; i < OutputSize; ++i)
-				for (int j = 0; j < HiddenSize; ++j)
-					MatrixWeight2[i][j] -= (LearnRate * ErrorOutput[i] * Hidden[j]);
+			for (int i = 0; i < outputSize; ++i)
+				for (int j = 0; j < hiddenSize; ++j)
+					matrixWeight2[i][j] -= (learnRate * errorOutput[i] * hidden[j]);
 
 			//std::vector<float> ErrorInput(InputSize, 0.f);
-			for (int i = 0; i < HiddenSize; ++i)
+			for (int i = 0; i < hiddenSize; ++i)
 			{
-				Biases1[i] -= (LearnRate * ErrorHidden[i]);
+				biases1[i] -= (learnRate * errorHidden[i]);
 
-				for (int j = 0; j < InputSize; ++j)
-					MatrixWeight1[i][j] -= (LearnRate * ErrorHidden[i] * InputUser[j]);
+				for (int j = 0; j < inputSize; ++j)
+					matrixWeight1[i][j] -= (learnRate * errorHidden[i] * InputUser[j]);
 					//ErrorInput[j] += ErrorHidden[i] * MatrixWeight1[i][j];
 			}
 
@@ -189,57 +139,57 @@ namespace Models
 			*/
 		}
 
-		void safeBrain(const std::string& FileName)
+		void safeBrain(const std::string& fileName)
 		{
-			std::ofstream SafeFile(FileName, std::ios::binary);
-			if (!SafeFile.is_open())
+			std::ofstream safeFile(fileName, std::ios::binary);
+			if (!safeFile.is_open())
 			{
 				//std::cout << "не удалось создать файл";
 				return;
 			}
 
-			for (int i = 0; i < HiddenSize; ++i)
-				SafeFile.write(reinterpret_cast<char*>(MatrixWeight1[i].data()), InputSize * sizeof(float));
-			SafeFile.write(reinterpret_cast<char*>(Biases1.data()), HiddenSize * sizeof(float));
+			for (int i = 0; i < hiddenSize; ++i)
+				safeFile.write(reinterpret_cast<char*>(matrixWeight1[i].data()), inputSize * sizeof(float));
+			safeFile.write(reinterpret_cast<char*>(biases1.data()), hiddenSize * sizeof(float));
 
-			for (int i = 0; i < OutputSize; ++i)
-				SafeFile.write(reinterpret_cast<char*>(MatrixWeight2[i].data()), HiddenSize * sizeof(float));
-			SafeFile.write(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
+			for (int i = 0; i < outputSize; ++i)
+				safeFile.write(reinterpret_cast<char*>(matrixWeight2[i].data()), hiddenSize * sizeof(float));
+			safeFile.write(reinterpret_cast<char*>(biases2.data()), outputSize * sizeof(float));
 
 			//for (int i = 0; i < OutputSize; ++i)
 			//	SafeFile.write(reinterpret_cast<char*>(EmbeddingTable[i].data()), EmbeddingSize * sizeof(float));
 
-			SafeFile.close();
+			safeFile.close();
 			//std::cout << "файл сохранен " << FileName;
 		}
 
-		bool loadBrain(const std::string& FileName)
+		bool loadBrain(const std::string& fileName)
 		{
-			std::ifstream LoadFile(FileName, std::ios::binary);
-			if (!LoadFile.is_open())
+			std::ifstream loadFile(fileName, std::ios::binary);
+			if (!loadFile.is_open())
 				return false;
 
-			for (int i = 0; i < HiddenSize; ++i)
-				LoadFile.read(reinterpret_cast<char*>(MatrixWeight1[i].data()), InputSize * sizeof(float));
-			LoadFile.read(reinterpret_cast<char*>(Biases1.data()), HiddenSize * sizeof(float));
+			for (int i = 0; i < hiddenSize; ++i)
+				loadFile.read(reinterpret_cast<char*>(matrixWeight1[i].data()), inputSize * sizeof(float));
+			loadFile.read(reinterpret_cast<char*>(biases1.data()), hiddenSize * sizeof(float));
 
-			for (int i = 0; i < OutputSize; ++i)
-				LoadFile.read(reinterpret_cast<char*>(MatrixWeight2[i].data()), HiddenSize * sizeof(float));
-			LoadFile.read(reinterpret_cast<char*>(Biases2.data()), OutputSize * sizeof(float));
+			for (int i = 0; i < outputSize; ++i)
+				loadFile.read(reinterpret_cast<char*>(matrixWeight2[i].data()), hiddenSize * sizeof(float));
+			loadFile.read(reinterpret_cast<char*>(biases2.data()), outputSize * sizeof(float));
 
 			//for (int i = 0; i < OutputSize; ++i)
 			//	LoadFile.read(reinterpret_cast<char*>(EmbeddingTable[i].data()), EmbeddingSize * sizeof(float));
 		
-			LoadFile.close();
+			loadFile.close();
 			//std::cout << "файл был успешно загружен из " << FileName;
 
 			return true;
 		}
 
 	private:
-		int InputSize = 0;
-		int HiddenSize = 0;
-		int EmbeddingSize = 0;
-		int OutputSize = 0;
+		int inputSize = 0;
+		int hiddenSize = 0;
+		int embeddingSize = 0;
+		int outputSize = 0;
 	};
 }

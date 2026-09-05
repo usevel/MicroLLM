@@ -22,6 +22,7 @@ public:
     void initModel(const std::vector<std::string>& dataSet);
     void updateMemory(const std::vector<std::string>& dataSet);
     void discussionWithModel(QString text);
+    void closeEvent(QCloseEvent* event);
 
     std::vector<std::string> getDataset();
 
@@ -35,5 +36,6 @@ private:
     std::mt19937 gen{ rd() };
     std::uniform_real_distribution<float> dist{ 0.f, 1.f };
     float Temperature = .8f;
-};
 
+    QThread* trainingThread = nullptr;
+};
